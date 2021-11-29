@@ -110,6 +110,7 @@ class Archive(commands.Cog):
                 for channel in category.text_channels:
                     async for archived_channel in channel.archived_threads(limit=None):
                         await archived_channel.edit(archived=False)
+                        await archived_channel.join()
 
         await ctx.reply("Done!")
 
@@ -154,6 +155,7 @@ class Archive(commands.Cog):
                                 " ".join([str(t.id) for t in channel.threads]),
                                 "-o",
                                 f"{channel.folder_path}/%c",
+                                "--dateformat u",
                                 "--media --reuse-media",
                             ]
                         )
@@ -170,6 +172,7 @@ class Archive(commands.Cog):
                         " ".join([str(c.id) for c in category.channels]),
                         "-o",
                         f"{category.path}/%c",
+                        "--dateformat u",
                         "--media --reuse-media",
                     ]
                 )
