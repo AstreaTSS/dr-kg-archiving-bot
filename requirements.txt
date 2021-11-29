@@ -1,0 +1,6 @@
+git+https://github.com/Rapptz/discord.py.git@45d498c1b76deaf3b394d17ccf56112fa691d160
+jishaku==2.3.1
+websockets==10.0
+python-dotenv==0.19.1
+rtoml==0.7.0
+attrs==21.2.0
