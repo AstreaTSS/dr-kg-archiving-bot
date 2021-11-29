@@ -1,0 +1,13 @@
+archive_location = "folder/on/computer/use/these/slashes"
+github_name = "Name-Of-Repo-On-GitHub"
+season_num = 1
+
+[[categories]]
+id = 123456789
+name = "Example"
+internal_name = "example"
+
+[[categories]]
+id = 987654321
+name = "Example 2"
+internal_name = "example_2"
