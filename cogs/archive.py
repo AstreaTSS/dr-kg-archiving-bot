@@ -154,6 +154,7 @@ class Archive(commands.Cog):
                                 " ".join([str(t.id) for t in channel.threads]),
                                 "-o",
                                 f"{channel.folder_path}/%c",
+                                "--media --reuse-media",
                             ]
                         )
 
@@ -169,6 +170,7 @@ class Archive(commands.Cog):
                         " ".join([str(c.id) for c in category.channels]),
                         "-o",
                         f"{category.path}/%c",
+                        "--media --reuse-media",
                     ]
                 )
 
