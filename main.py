@@ -25,9 +25,9 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-async def dh_prefixes(bot: commands.Bot, msg: discord.Message):
+async def archive_prefixes(bot: commands.Bot, msg: discord.Message):
     mention_prefixes = {f"{bot.user.mention} ", f"<@!{bot.user.id}> "}
-    custom_prefixes = {"d!"}
+    custom_prefixes = {"a!"}
     return mention_prefixes.union(custom_prefixes)
 
 
@@ -62,7 +62,7 @@ async def on_init_load():
     bot.init_load = False
 
 
-class DespairsHorizonBot(commands.Bot):
+class KGArchivingBot(commands.Bot):
     def __init__(
         self,
         command_prefix,
@@ -94,7 +94,7 @@ class DespairsHorizonBot(commands.Bot):
         await self.owner.send(connect_msg)
 
         activity = discord.Activity(
-            name="over Despair's Horizon", type=discord.ActivityType.watching
+            name="over a KG", type=discord.ActivityType.watching
         )
 
         try:
@@ -104,7 +104,7 @@ class DespairsHorizonBot(commands.Bot):
 
     async def on_resumed(self):
         activity = discord.Activity(
-            name="over Despair's Horizon", type=discord.ActivityType.watching
+            name="over a KG", type=discord.ActivityType.watching
         )
         await self.change_presence(activity=activity)
 
@@ -128,8 +128,8 @@ class DespairsHorizonBot(commands.Bot):
 intents = discord.Intents.all()
 mentions = discord.AllowedMentions.all()
 
-bot = DespairsHorizonBot(
-    command_prefix=dh_prefixes, allowed_mentions=mentions, intents=intents,
+bot = KGArchivingBot(
+    command_prefix=archive_prefixes, allowed_mentions=mentions, intents=intents,
 )
 bot.init_load = True
 bot.color = discord.Color(14232643)  # #D92C43, aka 14232643

@@ -101,6 +101,7 @@ class Archive(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
+    @commands.command()
     async def unarchive_threads(self, ctx: commands.Context):
         async with ctx.channel.typing():
             for category_entry in config["categories"]:
@@ -114,6 +115,7 @@ class Archive(commands.Cog):
 
         await ctx.reply("Done!")
 
+    @commands.command()
     async def archive(self, ctx: commands.Context):
         categories: typing.List[Category] = []
 
