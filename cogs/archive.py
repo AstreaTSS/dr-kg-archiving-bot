@@ -101,17 +101,22 @@ class Archive(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    @commands.command()
-    async def unarchive_threads(self, ctx: commands.Context):
+    @commands.command(aliases=["set_up_threads"])
+    async def setup_threads(self, ctx: commands.Context):
         async with ctx.channel.typing():
             for category_entry in config["categories"]:
                 category: discord.CategoryChannel = ctx.guild.get_channel(
                     category_entry["id"]
                 )  # type: ignore
                 for channel in category.text_channels:
+                    for thread in channel.threads:
+                        await thread.join()
+                        await thread.add_user(self.bot.owner)
+
                     async for archived_channel in channel.archived_threads(limit=None):
                         await archived_channel.edit(archived=False)
                         await archived_channel.join()
+                        await archived_channel.add_user(self.bot.owner)
 
         await ctx.reply("Done!")
 
