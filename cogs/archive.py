@@ -39,7 +39,7 @@ class Category(BaseChannel):
 
     @property
     def url_quote(self):
-        return urllib.parse.quote(f"{self.internal_name}/{self.internal_name}.md")
+        return urllib.parse.quote(f"{self.internal_name}/{self.internal_name}")
 
     @property
     def url_path(self):
