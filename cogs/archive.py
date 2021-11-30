@@ -147,37 +147,41 @@ class Archive(commands.Cog):
                             )
                             channel.threads.append(thread)
 
-                        subprocess.run(
-                            [
-                                "dotnet",
-                                str(os.environ.get("EXPORTER_DLL_PATH")),
-                                "export -t",
-                                f'"{os.environ.get("MAIN_TOKEN")}"',
-                                "-b -c",
-                                " ".join([str(t.id) for t in channel.threads]),
-                                "-o",
-                                f"{channel.folder_path}/%c",
-                                "--dateformat u",
-                                "--media --reuse-media",
-                            ]
-                        )
+                        command_list = [
+                            "dotnet",
+                            str(os.environ.get("EXPORTER_DLL_PATH")),
+                            "export -t",
+                            f'"{os.environ.get("MAIN_TOKEN")}"',
+                            "-b -c",
+                            " ".join([str(t.id) for t in channel.threads]),
+                            "-o",
+                            f'"{channel.folder_path}/%c.html"',
+                            "--dateformat u",
+                            "--parallel 10",
+                            "--media --reuse-media",
+                        ]
+                        command = " ".join(command_list)
+
+                        subprocess.run(command)
 
                     category.channels.append(channel)
 
-                subprocess.run(
-                    [
-                        "dotnet",
-                        str(os.environ.get("EXPORTER_DLL_PATH")),
-                        "export -t",
-                        f'"{os.environ.get("MAIN_TOKEN")}"',
-                        "-b -c",
-                        " ".join([str(c.id) for c in category.channels]),
-                        "-o",
-                        f"{category.path}/%c",
-                        "--dateformat u",
-                        "--media --reuse-media",
-                    ]
-                )
+                command_list = [
+                    "dotnet",
+                    str(os.environ.get("EXPORTER_DLL_PATH")),
+                    "export -t",
+                    f'"{os.environ.get("MAIN_TOKEN")}"',
+                    "-b -c",
+                    " ".join([str(c.id) for c in category.channels]),
+                    "-o",
+                    f'"{category.path}/%c.html"',
+                    "--dateformat u",
+                    "--parallel 10",
+                    "--media --reuse-media",
+                ]
+                command = " ".join(command_list)
+
+                subprocess.run(command)
 
                 with open(
                     f"{category.path}/{category.internal_name}.md",
