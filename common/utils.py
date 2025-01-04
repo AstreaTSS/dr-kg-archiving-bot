@@ -7,7 +7,7 @@ import interactions as ipy
 import typing_extensions as typing
 from interactions.ext import prefixed_commands as prefixed
 
-logger = logging.getLogger("uibot")
+logger = logging.getLogger("kgarchivebot")
 
 
 def error_embed_generate(error_msg: str) -> ipy.Embed:
