@@ -1,133 +1,118 @@
+import asyncio
+import importlib
 import os
-import subprocess
-import typing
 import urllib.parse
-from pathlib import Path
 
-import attr
-import discord
-import rtoml
-from discord.ext import commands
+import attrs
+import interactions as ipy
+import tomli
+from interactions.ext import prefixed_commands as prefixed
 
-config = rtoml.load(Path(os.environ.get("CONFIG_PATH")))
+import common.utils as utils
 
-os.environ.get("DIRECTORY_OF_FILE")
+with open(f"{os.environ["DIRECTORY_OF_FILE"]}/kg_config.toml", "rb") as config_file:
+    CONFIG = tomli.load(config_file)
 
 
-@attr.s
+@attrs.define()
 class BaseChannel:
-    id: int = attr.ib()
-    name: str = attr.ib()
+    id: int = attrs.field()
+    name: str = attrs.field()
 
     @property
     def path(self) -> str:
-        return config["archive_location"]
+        return CONFIG["archive_location"]
 
     @property
     def base_url(self) -> str:
-        return os.environ.get("WEBSITE_BASE") + config["github_name"]
+        return os.environ["WEBSITE_BASE"] + CONFIG["github_name"]
 
 
-@attr.s(slots=True)
+@attrs.define()
 class Category(BaseChannel):
-    internal_name: str = attr.ib()
-    channels: typing.List["Channel"] = attr.ib(factory=list)
+    internal_name: str = attrs.field()
+    channels: list["Channel"] = attrs.field(factory=list)
 
     @property
-    def path(self):
+    def path(self) -> str:
         return f"{super().path}/{self.internal_name}"
 
     @property
-    def url_quote(self):
+    def url_quote(self) -> str:
         return urllib.parse.quote(f"{self.internal_name}/{self.internal_name}")
 
     @property
-    def url_path(self):
+    def url_path(self) -> str:
         return f"{self.base_url}/{self.url_quote}"
 
-    def mkdir(self):
+    def mkdir(self) -> None:
         os.mkdir(self.path)
 
 
-@attr.s(slots=True)
+@attrs.define()
 class Channel(BaseChannel):
-    category: Category = attr.ib()
-    threads: typing.List["Thread"] = attr.ib(factory=list)
+    category: Category = attrs.field()
+    threads: list["Thread"] = attrs.field(factory=list)
 
     @property
-    def path(self):
+    def path(self) -> str:
         return f"{super().path}/{self.category.internal_name}/{self.id}.html"
 
     @property
-    def url_quote(self):
+    def url_quote(self) -> str:
         return urllib.parse.quote(f"{self.category.internal_name}/{self.id}.html")
 
     @property
-    def url_path(self):
+    def url_path(self) -> str:
         return f"{self.base_url}/{self.url_quote}"
 
     @property
-    def folder_path(self):
+    def folder_path(self) -> str:
         return self.path.replace(".html", "")
 
     @property
-    def proper_name(self):
+    def proper_name(self) -> str:
         return self.name.replace("-", " ").title()
 
-    def mkdir(self):
+    def mkdir(self) -> None:
         os.mkdir(self.folder_path)
 
 
-@attr.s(slots=True)
+@attrs.define()
 class Thread(BaseChannel):
-    channel: Channel = attr.ib()
+    channel: Channel = attrs.field()
 
     @property
-    def path(self):
+    def path(self) -> str:
         return f"{super().path}/{self.channel.category.internal_name}/{self.channel.id}/{self.id}.html"
 
     @property
-    def url_quote(self):
+    def url_quote(self) -> str:
         return urllib.parse.quote(
             f"{self.channel.category.internal_name}/{self.channel.id}/{self.id}.html"
         )
 
     @property
-    def url_path(self):
+    def url_path(self) -> str:
         return f"{self.base_url}/{self.url_quote}"
 
 
-class Archive(commands.Cog):
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+class Archive(utils.Extension):
+    def __init__(self, bot: utils.KGArchiveBase) -> None:
+        self.bot: utils.KGArchiveBase = bot
 
-    @commands.command(aliases=["set_up_threads"])
-    async def setup_threads(self, ctx: commands.Context):
-        async with ctx.channel.typing():
-            for category_entry in config["categories"]:
-                category: discord.CategoryChannel = ctx.guild.get_channel(
-                    category_entry["id"]
-                )  # type: ignore
-                for channel in category.text_channels:
-                    for thread in channel.threads:
-                        await thread.join()
-                        await thread.add_user(self.bot.owner)
+    @prefixed.prefixed_command()
+    @ipy.check(ipy.is_owner())
+    @ipy.check(ipy.guild_only())
+    async def archive(self, ctx: prefixed.PrefixedContext) -> None:
+        categories: list[Category] = []
 
-                    async for archived_channel in channel.archived_threads(limit=None):
-                        await archived_channel.edit(archived=False)
-                        await archived_channel.join()
-                        await archived_channel.add_user(self.bot.owner)
+        await ctx.reply(
+            embeds=utils.make_embed("Here we go. This will take a *long* time.")
+        )
 
-        await ctx.reply("Done!")
-
-    @commands.command()
-    async def archive(self, ctx: commands.Context):
-        categories: typing.List[Category] = []
-
-        await ctx.reply("Here we go. This will take a *long* time.")
-
-        async with ctx.channel.typing():
-            for category_entry in config["categories"]:
+        async with ctx.channel.typing:
+            for category_entry in CONFIG["categories"]:
                 category = Category(
                     category_entry["id"],
                     category_entry["name"],
@@ -135,67 +120,73 @@ class Archive(commands.Cog):
                 )
                 category.mkdir()
 
-                category_channel: discord.CategoryChannel = ctx.guild.get_channel(
-                    category.id
-                )  # type: ignore
+                category_channel: ipy.GuildCategory = ctx.guild.get_channel(
+                    category_entry["id"]
+                )
                 for discord_channel in category_channel.text_channels:
                     channel = Channel(
                         discord_channel.id, discord_channel.name, category
                     )
 
-                    if discord_channel.threads:
+                    threads = await discord_channel.fetch_all_threads()
+
+                    if threads.threads:
                         channel.mkdir()
 
-                        for discord_thread in discord_channel.threads:
+                        for discord_thread in threads.threads:
                             thread = Thread(
                                 discord_thread.id, discord_thread.name, channel
                             )
                             channel.threads.append(thread)
 
                         command_list = [
-                            "dotnet",
-                            str(os.environ.get("EXPORTER_DLL_PATH")),
+                            os.environ["CLI_EXECUTABLE"],
                             "export -t",
-                            f'"{os.environ.get("MAIN_TOKEN")}"',
-                            "-b -c",
+                            f'"{os.environ["MAIN_TOKEN"]}"',
+                            " -c",
                             " ".join([str(t.id) for t in channel.threads]),
                             "-o",
                             f'"{channel.folder_path}/%c.html"',
-                            "--dateformat u",
+                            "--utc",
                             "--parallel 10",
-                            "--media --reuse-media",
+                            "--media --reuse-media --fuck-russia",
                         ]
                         command = " ".join(command_list)
 
-                        subprocess.run(command)
+                        process = await asyncio.create_subprocess_shell(command)
+                        await process.wait()
 
                     category.channels.append(channel)
 
                 command_list = [
-                    "dotnet",
-                    str(os.environ.get("EXPORTER_DLL_PATH")),
+                    os.environ["CLI_EXECUTABLE"],
                     "export -t",
-                    f'"{os.environ.get("MAIN_TOKEN")}"',
-                    "-b -c",
+                    f'"{os.environ["MAIN_TOKEN"]}"',
+                    " -c",
                     " ".join([str(c.id) for c in category.channels]),
                     "-o",
                     f'"{category.path}/%c.html"',
-                    "--dateformat u",
+                    "--utc",
                     "--parallel 10",
-                    "--media --reuse-media",
+                    "--media --reuse-media --fuck-russia",
                 ]
                 command = " ".join(command_list)
 
-                subprocess.run(command)
+                process = await asyncio.create_subprocess_shell(command)
+                await process.wait()
 
                 with open(
                     f"{category.path}/{category.internal_name}.md",
                     "w",
                     encoding="utf-8",
                 ) as md_file:
-                    md_file.write(
-                        f"# Season {config['season_num']} - {category.name}\n\nAll Locations:\n"
-                    )
+                    md_file.write(f"# {category.name}\n\nAll Locations:\n")
+
+                    # TODO: add some control over this
+                    # md_file.write(
+                    #     f"# Season {CONFIG['season_num']} - {category.name}\n\nAll"
+                    #     " Locations:\n"
+                    # )
                     for channel in category.channels:
                         md_file.write(
                             f"* [{channel.proper_name}]({channel.url_path})\n"
@@ -208,15 +199,16 @@ class Archive(commands.Cog):
                 categories.append(category)
 
             with open(
-                f"{config['archive_location']}/README.md", "w", encoding="utf-8"
+                f"{CONFIG['archive_location']}/README.md", "w", encoding="utf-8"
             ) as md_file:
                 md_file.write("# Home Page\n\nAll Categories:\n")
 
                 for category in categories:
                     md_file.write(f"* [{category.name}]({category.url_path})\n")
 
-        await ctx.reply("Done!")
+        await ctx.reply(embeds=utils.make_embed("Done!"))
 
 
-def setup(bot):
-    bot.add_cog(Archive(bot))
+def setup(bot: utils.KGArchiveBase) -> None:
+    importlib.reload(utils)
+    Archive(bot)

@@ -1,6 +1,5 @@
 archive_location = "folder/on/computer/use/these/slashes"
 github_name = "Name-Of-Repo-On-GitHub"
-season_num = 1
 
 [[categories]]
 id = 123456789
