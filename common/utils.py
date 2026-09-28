@@ -27,9 +27,7 @@ def make_embed(description: str) -> ipy.Embed:
     )
 
 
-async def error_handle(
-    error: Exception, *, ctx: ipy.BaseContext | None = None
-) -> None:
+async def error_handle(error: Exception, *, ctx: ipy.BaseContext | None = None) -> None:
     if not isinstance(error, aiohttp.ServerDisconnectedError):
         traceback.print_exception(error)
         logger.error("An error occured.", exc_info=error)
